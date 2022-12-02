@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QComboBox, QTableWidget, QPushButton,
     QGridLayout, QHBoxLayout, QVBoxLayout
 )
+import ccxt
+from param import *
 
 class MyWindow(QMainWindow):
     def __init__(self):
@@ -11,6 +13,31 @@ class MyWindow(QMainWindow):
         self.setWindowTitle(":: PYSTOCK Grid Trading Bot v1.0 ::")
         self.resize(750, 800)
         self.init_ui()
+
+        # variables
+        self.exchange = None
+        self.markets = None
+        self.symbol = "BTC/USDT"
+
+        self.init_exchange()
+        self.update_gt_param()
+
+    def init_exchange(self):
+        f = open("./binance.key")
+        lines = f.readlines()
+        api_key = lines[0].strip()
+        secret = lines[1].strip()
+        f.close()
+
+        self.exchange = ccxt.binance(config={
+            'apiKey': api_key,
+            'secret': secret,
+            'enableRateLimit': True,
+            'options': {
+                'defaultType': 'future'
+            }
+        })
+        self.markets = self.exchange.load_markets()
 
     def init_ui(self):
         self.label_lower_price = QLabel("Lower Price")
@@ -101,6 +128,12 @@ class MyWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(vbox)
         self.setCentralWidget(widget)
+
+    def update_gt_param(self):
+        lower_price, upper_price = cal_lp_up(self.exchange, self.symbol)
+        atr = cal_atr(self.exchange, self.symbol)
+        grid_number = cal_grid_number(upper_price, lower_price, atr)
+        print(lower_price, upper_price, grid_number)
 
 
 if __name__ == "__main__":
